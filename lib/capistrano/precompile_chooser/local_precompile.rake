@@ -3,6 +3,7 @@ namespace :load do
     set_if_empty :assets_dir,  "public/assets"
     set_if_empty :packs_dir,   "public/packs"
     set_if_empty :rsync_cmd,   "rsync -av --delete"
+    set_if_empty :rsync_key,   nil
     set_if_empty :assets_role, "web"
   end
 end
@@ -31,13 +32,17 @@ namespace :deploy do
       task :rsync do
         on roles(fetch(:assets_role)), in: :parallel do |server|
           run_locally do
-            remote_shell = %(-e "ssh -p #{server.port}") if server.port
+            remote_shell = []
+            remote_shell << %(-p #{server.port})          if server.port
+            remote_shell << %(-i #{fetch(:rsync_key)})    if fetch(:rsync_key)
+            remote_shell = remote_shell.compact.join(' ')
+            remote_shell = %[-e ssh "#{remote_shell}"]    if remote_shell.size > 0
 
             commands = []
             commands << "#{fetch(:rsync_cmd)} #{remote_shell} ./#{fetch(:assets_dir)}/ #{server.user}@#{server.hostname}:#{release_path}/#{fetch(:assets_dir)}/" if Dir.exists?(fetch(:assets_dir))
             commands << "#{fetch(:rsync_cmd)} #{remote_shell} ./#{fetch(:packs_dir)}/ #{server.user}@#{server.hostname}:#{release_path}/#{fetch(:packs_dir)}/" if Dir.exists?(fetch(:packs_dir))
 
-            commands.each do |command| 
+            commands.each do |command|
               if dry_run?
                 SSHKit.config.output.info command
               else
