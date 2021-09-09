@@ -36,7 +36,7 @@ namespace :deploy do
             remote_shell << %(-p #{server.port})          if server.port
             remote_shell << %(-i #{fetch(:rsync_key)})    if fetch(:rsync_key)
             remote_shell = remote_shell.compact.join(' ')
-            remote_shell = %[-e ssh "#{remote_shell}"]    if remote_shell.size > 0
+            remote_shell = %[-e "ssh #{remote_shell}"]    if remote_shell.size > 0
 
             commands = []
             commands << "#{fetch(:rsync_cmd)} #{remote_shell} ./#{fetch(:assets_dir)}/ #{server.user}@#{server.hostname}:#{release_path}/#{fetch(:assets_dir)}/" if Dir.exists?(fetch(:assets_dir))
